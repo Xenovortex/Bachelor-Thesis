@@ -4,7 +4,7 @@ from FrEIA.modules import coupling_layers as la
 from FrEIA.modules import reshapes as re
 
 
-def mnist_inn_com(latent_dim, mask_size=[28, 28], batch_norm=False):
+def mnist_inn_com(mask_size=[28, 28], batch_norm=False):
     """
     Return MNIST INN autoencoder for comparison with classical autoencoder (same number of parameters).
 
@@ -19,23 +19,29 @@ def mnist_inn_com(latent_dim, mask_size=[28, 28], batch_norm=False):
 
     r1 = fr.Node([inp.out0], re.haar_multiplex_layer, {}, name='r1')
 
-    conv1 = fr.Node([r1.out0], la.rev_multiplicative_layer,
+    conv1 = fr.Node([r1.out0], la.glow_coupling_layer,
                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 64, 'batch_norm': batch_norm}, 'clamp': 1},
                     name='conv1')
 
-    conv2 = fr.Node([conv1.out0], la.rev_multiplicative_layer,
+    conv2 = fr.Node([conv1.out0], la.glow_coupling_layer,
                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 64, 'batch_norm': batch_norm}, 'clamp': 1},
                     name='conv2')
 
-    conv3 = fr.Node([conv2.out0], la.rev_multiplicative_layer,
+    conv3 = fr.Node([conv2.out0], la.glow_coupling_layer,
                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 64, 'batch_norm': batch_norm}, 'clamp': 1},
                     name='conv3')
 
-    r2 = fr.Node([conv3.out0], re.haar_restore_layer, {}, name='r2')
+    r2 = fr.Node([conv3.out0], re.reshape_layer, {}, name='r2')
 
-    outp = fr.OutputNode([r2.out0], name='output')
+    fc = fr.Node([r2.out0], la.glow_coupling_layer, {'F_class': fu.F_small_connected, 'clamp': 1}, name='fc')
 
-    nodes = [inp, outp, conv1, conv2, conv3, r1, r2]
+    r3 = fr.Node([fc.out0], re.reshape_layer, {}, name='r3')
+
+    r4 = fr.Node([r3.out0], re.haar_restore_layer, {}, name='r4')
+
+    outp = fr.OutputNode([r4.out0], name='output')
+
+    nodes = [inp, outp, conv1, conv2, conv3, fc, r1, r2, r3, r4]
 
     coder = fr.ReversibleGraphNet(nodes, 0, 1)
 
