@@ -3,7 +3,7 @@ import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 
 
-def load_mnist():
+def load_mnist(aug=False):
     """
     Check if the MNIST dataset already exists in the directory "./datasets/mnist". If not, the MNIST dataset is
     downloaded. Returns trainset, testset and classes of MNIST. Applied transformations: RandomResizedCrop(),

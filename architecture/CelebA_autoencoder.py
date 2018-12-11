@@ -7,21 +7,30 @@ class celeba_autoencoder(nn.Module):
         super(celeba_autoencoder, self).__init__()
 
         # encoder
-        self.e1 = nn.Conv2d(3, 128, 4, stride=2, padding=0)  # b, 128, 108, 88
-        self.e2 = nn.MaxPool2d(2, stride=2, padding=1)  # b, 128, 54, 44
-        self.e3 = nn.Conv2d(128, 128*2, 4, stride=2, padding=(0,1))  # b, 256, 26, 22
-        self.e4 = nn.Conv2d(128*2, 128*4, 4, stride=2, padding=0)  # b, 512, 12, 10
-        self.e5 = nn.Conv2d(128*4, 128*8, 4, stride=2, padding=0)  # b, 1024, 5, 4
-        self.e6 = nn.Conv2d(128*8, 128*8, 4, stride=1, padding=1)  # b, 1024, 4, 3
-        self.e7 = nn.Linear(128*8*4*3, bottleneck)  # bottleneck
+        self.e1 = nn.Conv2d(3, 32, 3, stride=1, padding=0)  # b, 32, 216, 176
+        self.e2 = nn.Conv2d(32, 64, 3, stride=1, padding=0) # b, 64, 214, 174
+        self.e3 = nn.Conv2d(64, 128, 3, stride=1, padding=0) # b, 128, 212, 172
+        self.e4 = nn.MaxPool2d(2, stride=2, padding=0) # b, 128, 106, 86
+        self.e5 = nn.Conv2d(128, 256, 3, stride=1, padding=0) # b, 256, 104, 84
+        self.e6 = nn.Conv2d(256, 512, 3, stride=1, padding=0) # b, 512, 102, 82
+        self.e7 = nn.Conv2d(512, 1024, 3, stride=1, padding=0) # b, 1024, 100, 80
+        self.e8 = nn.MaxPool2d(2, stride=2, padding=0) # b, 1024, 50, 40
+        self.e9 = nn.Conv2d(1024, 1024, 3, stride=1, padding=0) # b, 1024, 48, 38
+        self.e10 = nn.Conv2d(1024, 1024, 3, stride=1, padding=0) # b, 1024, 46, 36
+        self.e11 = nn.Linear(1024*46*36, bottleneck) # bottleneck
 
         # decoder
-        self.d1 = nn.Linear(bottleneck, 128*8*4*3)  # b, 1024, 4, 3
-        self.d2 = nn.ConvTranspose2d(128*8, 512, 5, stride=2)  # b, 512, 11, 9
-        self.d3 = nn.ConvTranspose2d(512, 256, 5, stride=2)  # b, 256, 25, 21
-        self.d4 = nn.ConvTranspose2d(256, 128, 5, stride=2, padding=(0,1))  # b, 128, 53, 43
-        self.d5 = nn.ConvTranspose2d(128, 64, 4, stride=2)  # b, 64, 108, 88
-        self.d6 = nn.ConvTranspose2d(64, 3, 4, stride=2)  # b, 3, 218, 178
+        self.d1 = nn.Linear(bottleneck, 1024*46*36)  # b, 1024, 46, 36
+        self.d2 = nn.ConvTranspose2d(1024, 1024, 3, stride=1, padding=0) # 1024, 48, 38
+        self.d3 = nn.ConvTranspose2d(1024, 1024, 3, stride=1, padding=0) # 1024, 50, 40
+        self.d4 = nn.UpsamlingNearest2d(scale_factor=2) # 1024, 100, 80
+        self.d5 = nn.ConvTranspose2d(1024, 512, 3, stride=1, padding=0) # 512, 102, 82
+        self.d6 = nn.ConvTranspose2d(512, 256, 3, stride=1, padding=0) # 256, 104, 84
+        self.d7 = nn.ConvTranspose2d(256, 128, 3, stride=1, padding=0) # 128, 106, 86
+        self.d8 = nn.UpsamlingNearest2d(scale_factor=2) # 128, 212, 172
+        self.d9 = nn.ConvTranspose2d(128, 64, 3, stride=1, padding=0) # 64, 214, 174
+        self.d10 = nn.ConvTranspose2d(64, 32, 3, stride=1, padding=0) # 32, 216, 176
+        self.d11 = nn.ConvTranspose2d(32, 3, 3, stride=1, padding=0) # 3, 218, 178
 
         # activation functions
         self.relu = nn.ReLU()
@@ -30,26 +39,32 @@ class celeba_autoencoder(nn.Module):
 
     def encode(self, x):
         h1 = self.relu(self.e1(x))
-        h2 = self.relu(self.e3(self.e2(h1)))
-        h3 = self.relu(self.e4(h2))
+        h2 = self.relu(self.e2(h1))
+        h3 = self.relu(self.e4(self.e3(h2)))
         h4 = self.relu(self.e5(h3))
         h5 = self.relu(self.e6(h4))
-        h5 = h5.view(-1, 128*8*4*3)
-        h6 = self.e7(h5)
+        h6 = self.relu(self.e8(self.e7(h5)))
+        h7 = self.relu(self.e9(h6))
+        h8 = self.relu(self.e10(h7))
+        h8 = h8.view(-1, 1024*46*36)
+        h9 = self.e11(h8)
 
-        return h6
+        return h9
 
 
     def decode(self, z):
         h1 = self.relu(self.d1(z))
-        h1 = h1.view(-1, 128*8, 4, 3)
+        h1 = h1.view(-1, 1024, 46, 36)
         h2 = self.relu(self.d2(h1))
         h3 = self.relu(self.d3(h2))
-        h4 = self.relu(self.d4(h3))
-        h5 = self.relu(self.d5(h4))
-        h6 = self.tanh(self.d6(h5))
+        h4 = self.relu(self.d5(self.d4(h3)))
+        h5 = self.relu(self.d6(h4))
+        h6 = self.relu(self.d7(h5))
+        h7 = self.relu(self.d9(self.d8(h6)))
+        h8 = self.relu(self.d10(h7))
+        h9 = self.tanh(self.d11(h8))
 
-        return h6
+        return h9
 
     def forward(self, x):
         z = self.encode(x)

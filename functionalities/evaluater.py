@@ -44,7 +44,7 @@ def get_loss(loader, model, criterion, latent_dim, tracker, device='cpu'):
             batch_loss = criterion(inputs, lat_img, output)
 
             for i in range(len(batch_loss)):
-                losses[i] += batch_loss[i].item() * 100
+                losses[i] += batch_loss[i].item()
 
             tracker.update(lat_img)
 

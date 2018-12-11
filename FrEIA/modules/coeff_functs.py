@@ -8,7 +8,7 @@ class F_conv(nn.Module):
     '''ResNet transformation, not itself reversible, just used below'''
 
     def __init__(self, in_channels, channels, channels_hidden=None,
-                 stride=None, kernel_size=3, leaky_slope=0.1,
+                 stride=None, kernel_size=3, last_kernel_size=1, leaky_slope=0.1,
                  batch_norm=False):
         super(F_conv, self).__init__()
 
@@ -19,6 +19,7 @@ class F_conv(nn.Module):
             channels_hidden = channels
 
         pad = kernel_size // 2
+        last_pad = last_kernel_size // 2
         self.leaky_slope = leaky_slope
         self.conv1 = nn.Conv2d(in_channels, channels_hidden,
                                kernel_size=kernel_size, padding=pad,
@@ -27,7 +28,7 @@ class F_conv(nn.Module):
                                kernel_size=kernel_size, padding=pad,
                                bias=not batch_norm)
         self.conv3 = nn.Conv2d(channels_hidden, channels,
-                               kernel_size=kernel_size, padding=pad,
+                               kernel_size=last_kernel_size, padding=last_pad,
                                bias=not batch_norm)
 
         if batch_norm:
@@ -91,13 +92,13 @@ class F_fully_connected(nn.Module):
 class F_small_connected(nn.Module):
     '''Fully connected tranformation, not reversible, but used below.'''
 
-    def __init__(self, size_in, size, internal_size = None):
+    def __init__(self, size_in, size, internal_size = None, dropout=0.0):
         super(F_small_connected, self).__init__()
-        assert size_in == size, 'please choose equal sizes'
+        #assert size_in == size, 'please choose equal sizes'
         if not internal_size:
-            internal_size = 2*size
+            internal_size = size
 
-        self.d1 =  nn.Dropout(p=0.0)
+        self.d1 =  nn.Dropout(p=dropout)
 
         self.fc1 = nn.Linear(size, internal_size)
         self.fc3 = nn.Linear(internal_size, size)

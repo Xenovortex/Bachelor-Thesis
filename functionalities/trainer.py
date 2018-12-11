@@ -9,7 +9,8 @@ from functionalities import plot as pl
 
 
 def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_dim, trainloader, validloader=None,
-          testloader=None, tracker=None, device='cpu', save_model=True, save_variable=True, subdir=None, num_epoch_save=10):
+          testloader=None, tracker=None, device='cpu', save_model=True, save_variable=True, subdir=None, num_epoch_save=10, 
+          num_img=100, grid_row_size=10):
     """
     Train a INN model.
 
@@ -137,7 +138,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             print('latent image mean: {:.3f} \t latent image std: {:.3f}'.format(tracker.mu, tracker.std))
 
         if epoch % num_epoch_save == 0 or epoch == (num_epoch - 1):
-            pl.plot_diff(model, testloader, latent_dim, device, 100, 10, filename=modelname + "_{}".format(epoch))
+            pl.plot_diff(model, testloader, latent_dim, device, num_img, grid_row_size, filename=modelname + "_{}".format(epoch))
 
         print('\n')
         print('-' * 80)
@@ -179,7 +180,8 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
 
 def train_bottleneck(num_epoch, get_model, loss_type, modelname, milestones, latent_dim_lst, trainloader,
                      validloader=None, testloader=None, a_distr=1, a_rec=1, a_spar=1, a_disen=1, lr_init=1e-3,
-                     l2_reg=1e-6, device='cpu', save_model=False, save_variable=True, use_lat_dim=False, num_epoch_save=10):
+                     l2_reg=1e-6, device='cpu', save_model=False, save_variable=True, use_lat_dim=False, num_epoch_save=10,
+                     num_img=100, grid_row_size=10):
     """
     Train model for various latent dimensions to find the suitable bottleneck.
 
@@ -232,7 +234,7 @@ def train_bottleneck(num_epoch, get_model, loss_type, modelname, milestones, lat
 
         model = train(num_epoch, model, modelname + "_{}".format(latent_dim), criterion, optimizer, scheduler,
                       latent_dim, trainloader, validloader, testloader, track, device, save_model, save_variable,
-                      modelname + "_bottleneck", num_epoch_save)
+                      modelname + "_bottleneck", num_epoch_save, num_img, grid_row_size)
 
         train_losses = ev.get_loss(trainloader, model, criterion, latent_dim, track, device)
         tot_train_loss_log.append(train_losses[0])
@@ -284,6 +286,8 @@ def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_s
     else:
         model = get_model()
 
+    init_param(model)
+
     model.train()
 
     model_params = []
@@ -316,6 +320,13 @@ def init_training(model_params, lr_init, l2_reg, milestones):
     return optimizer, scheduler
 
 
+def init_param(mod, sigma = 0.1):
+    for key, param in mod.named_parameters():
+        split = key.split('.')
+        if param.requires_grad:
+            param.data = sigma * torch.randn(param.data.shape).cuda()
+            if split[3][-1] == '3': # last convolution in the coeff func
+                param.data.fill_(0.)
 
 
 

@@ -4,13 +4,12 @@ from FrEIA.modules import coupling_layers as la
 from FrEIA.modules import reshapes as re
 
 
-def mnist_inn_com(mask_size=[28, 28], batch_norm=False):
+def mnist_inn_com(mask_size=[28, 28]):
     """
-    Return MNIST INN autoencoder for comparison with classical autoencoder (same number of parameters).
+    Return an autoencoder.
 
     :param mask_size: size of the input. Default: Size of MNIST images
-    :param batch_norm: use batch norm for the F_conv modules
-    :return: MNIST INN autoencoder
+    :return:
     """
 
     img_dims = [1, mask_size[0], mask_size[1]]
@@ -19,36 +18,33 @@ def mnist_inn_com(mask_size=[28, 28], batch_norm=False):
 
     r1 = fr.Node([inp.out0], re.haar_multiplex_layer, {}, name='r1')
 
-    conv1 = fr.Node([r1.out0], la.glow_coupling_layer,
-                    {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 64, 'batch_norm': batch_norm}, 'clamp': 1},
-                    name='conv1')
+    conv1 = fr.Node([r1.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
+                    'F_args': {'channels_hidden': 64}, 'clamp': 1}, name='conv1')
 
-    conv2 = fr.Node([conv1.out0], la.glow_coupling_layer,
-                    {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 64, 'batch_norm': batch_norm}, 'clamp': 1},
-                    name='conv2')
+    conv2 = fr.Node([conv1.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
+                    'F_args': {'channels_hidden': 64}, 'clamp': 1}, name='conv2')
 
-    conv3 = fr.Node([conv2.out0], la.glow_coupling_layer,
-                    {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 64, 'batch_norm': batch_norm}, 'clamp': 1},
-                    name='conv3')
+    conv3 = fr.Node([conv2.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
+                    'F_args': {'channels_hidden': 64}, 'clamp': 1}, name='conv3')
 
-    r2 = fr.Node([conv3.out0], re.reshape_layer, {}, name='r2')
+    r2 = fr.Node([conv3.out0], re.reshape_layer, {'target_dim': (img_dims[0]*img_dims[1]*img_dims[2],)}, name='r2')
 
-    fc = fr.Node([r2.out0], la.glow_coupling_layer, {'F_class': fu.F_small_connected, 'clamp': 1}, name='fc')
+    fc = fr.Node([r2.out0], la.rev_multiplicative_layer, {'F_class': fu.F_small_connected, 'F_args': {'internal_size': 100}, 'clamp': 1}, name='fc')
 
-    r3 = fr.Node([fc.out0], re.reshape_layer, {}, name='r3')
+    r3 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (4, 14, 14)}, name='r3')
 
     r4 = fr.Node([r3.out0], re.haar_restore_layer, {}, name='r4')
 
     outp = fr.OutputNode([r4.out0], name='output')
 
-    nodes = [inp, outp, conv1, conv2, conv3, fc, r1, r2, r3, r4]
+    nodes = [inp, outp, conv1, conv2, conv3, r1, r2, r3, r4, fc]
 
     coder = fr.ReversibleGraphNet(nodes, 0, 1)
 
     return coder
 
 
-def cifar_inn_com(latent_dim, mask_size=[32, 32], batch_norm=False):
+def cifar_inn_com(mask_size=[32, 32]):
     """
     Return CIFAR INN autoencoder for comparison with classical autoencoder (same number of parameters).
 
@@ -64,53 +60,37 @@ def cifar_inn_com(latent_dim, mask_size=[32, 32], batch_norm=False):
 
     r1 = fr.Node([inp.out0], re.haar_multiplex_layer, {}, name='r1')
 
-    conv11 = fr.Node([r1.out0], la.rev_multiplicative_layer,
-                    {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
-                    name='conv11')
+    conv1 = fr.Node([r1.out0], la.glow_coupling_layer,
+                    {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128}, 'clamp': 1},
+                    name='conv1')
 
-    conv12 = fr.Node([conv11.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
-                     name='conv12')
+    conv2 = fr.Node([conv1.out0], la.glow_coupling_layer,
+                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128}, 'clamp': 1},
+                     name='conv2')
 
-    conv13 = fr.Node([conv12.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
-                     name='conv13')
+    conv3 = fr.Node([conv2.out0], la.glow_coupling_layer,
+                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128}, 'clamp': 1},
+                     name='conv3')
 
-    r2 = fr.Node([conv13.out0], re.haar_multiplex_layer, {}, name='r2')
+    r2 = fr.Node([conv3.out0], re.reshape_layer, {'target_dim': (img_dims[0]*img_dims[1]*img_dims[2],)}, name='r2')
 
-    conv21 = fr.Node([r2.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
-                     name='conv21')
+    fc = fr.Node([r2.out0], la.rev_multiplicative_layer,
+                 {'F_class': fu.F_small_connected, 'F_args': {'internal_size': 500}, 'clamp': 1}, name='fc')
 
-    conv22 = fr.Node([conv21.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
-                     name='conv22')
+    r3 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (48, 8, 8)}, name='r3')
 
-    conv23 = fr.Node([conv22.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
-                     name='conv23')
+    r4 = fr.Node([r3.out0], re.haar_restore_layer, {}, name='r4')
 
-    r3 = fr.Node([conv23.out0], re.reshape_layer, {'target_dim': (3072,)}, name='r3')
+    outp = fr.OutputNode([r4.out0], name='output')
 
-    fc = fr.Node([r3.out0], la.rev_multiplicative_layer,
-                 {'F_class': fu.F_small_connected, 'F_args': {'internal_size': latent_dim}, 'clamp': 1}, name='fc')
-
-    r4 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (48, 8, 8)}, name='r4')
-
-    r5 = fr.Node([r4.out0], re.haar_restore_layer, {}, name='r5')
-
-    r6 = fr.Node([r5.out0], re.haar_restore_layer, {}, name='r6')
-
-    outp = fr.OutputNode([r6.out0], name='output')
-
-    nodes = [inp, outp, conv11, conv12, conv13, conv21, conv22, conv23, fc, r1, r2, r3, r4, r5, r6]
+    nodes = [inp, outp, conv1, conv2, conv3, fc, r1, r2, r3, r4]
 
     coder = fr.ReversibleGraphNet(nodes, 0, 1)
 
     return coder
 
 
-def celeba_inn_com(latent_dim, mask_size=[218, 178], batch_norm=False):
+def celeba_inn_com(mask_size=[156, 128]):
     """
     Return CelebA INN autoencoder for comparison with classical autoencoder (same number of parameters).
 
@@ -126,38 +106,38 @@ def celeba_inn_com(latent_dim, mask_size=[218, 178], batch_norm=False):
 
     r1 = fr.Node([inp.out0], re.haar_multiplex_layer, {}, name='r1')
 
-    conv11 = fr.Node([r1.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
+    conv11 = fr.Node([r1.out0], la.glow_coupling_layer,
+                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128}, 'clamp': 1},
                      name='conv11')
 
-    conv12 = fr.Node([conv11.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
+    conv12 = fr.Node([conv11.out0], la.glow_coupling_layer,
+                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128}, 'clamp': 1},
                      name='conv12')
 
-    conv13 = fr.Node([conv12.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
+    conv13 = fr.Node([conv12.out0], la.glow_coupling_layer,
+                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128}, 'clamp': 1},
                      name='conv13')
 
     r2 = fr.Node([conv13.out0], re.haar_multiplex_layer, {}, name='r2')
 
-    conv21 = fr.Node([r2.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
+    conv21 = fr.Node([r2.out0], la.glow_coupling_layer,
+                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128}, 'clamp': 1},
                      name='conv21')
 
-    conv22 = fr.Node([conv21.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
+    conv22 = fr.Node([conv21.out0], la.glow_coupling_layer,
+                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128}, 'clamp': 1},
                      name='conv22')
 
-    conv23 = fr.Node([conv22.out0], la.rev_multiplicative_layer,
-                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1},
+    conv23 = fr.Node([conv22.out0], la.glow_coupling_layer,
+                     {'F_class': fu.F_conv, 'F_args': {'channels_hidden': 128}, 'clamp': 1},
                      name='conv23')
 
-    r3 = fr.Node([conv23.out0], re.reshape_layer, {'target_dim': (3*218*178,)}, name='r3')
+    r3 = fr.Node([conv23.out0], re.reshape_layer, {'target_dim': (img_dims[0]*img_dims[1]*img_dims[2],)}, name='r3')
 
     fc = fr.Node([r3.out0], la.rev_multiplicative_layer,
-                 {'F_class': fu.F_small_connected, 'F_args': {'internal_size': latent_dim}, 'clamp': 1}, name='fc')
+                 {'F_class': fu.F_small_connected, 'F_args': {'internal_size': 200}, 'clamp': 1}, name='fc')
 
-    r4 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (48, 8, 8)}, name='r4')
+    r4 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (48, 39, 32)}, name='r4')
 
     r5 = fr.Node([r4.out0], re.haar_restore_layer, {}, name='r5')
 
@@ -544,7 +524,46 @@ def mnist_inn_glow(mask_size=[28, 28], batch_norm=False):
     return coder
 
 
+
 def cifar_inn_glow(mask_size=[32, 32], batch_norm=False):
+    """
+    Return an autoencoder.
+
+    :param mask_size: size of the input. Default: Size of CIFAR images
+    :return: autoencoder
+    """
+
+    img_dims = [3, mask_size[0], mask_size[1]]
+
+    inp = fr.InputNode(*img_dims, name='input')
+
+    r1 = fr.Node([inp.out0], re.haar_multiplex_layer, {}, name='r1')
+
+    conv11 = fr.Node([r1.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
+                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv11')
+    conv12 = fr.Node([conv11.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
+                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv12')
+    conv13 = fr.Node([conv12.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
+                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv13')
+
+    r2 = fr.Node([conv13.out0], re.reshape_layer, {'target_dim': (3072,)}, name='r2')
+
+    fc = fr.Node([r2.out0], la.glow_coupling_layer, {'F_class': fu.F_fully_connected, 'clamp': 1}, name='fc')
+
+    r3 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (12, 16, 16)}, name='r3')
+
+    r4 = fr.Node([r3.out0], re.haar_restore_layer, {}, name='r4')
+
+    outp = fr.OutputNode([r4.out0], name='output')
+
+    nodes = [inp, outp, conv11, conv12, conv13, r1, r2, r3, r4, fc]
+
+    coder = fr.ReversibleGraphNet(nodes, 0, 1)
+
+    return coder
+
+
+def celeba_inn_glow(mask_size=[156, 128], batch_norm=False):
     """
     Return an autoencoder.
 
@@ -574,72 +593,9 @@ def cifar_inn_glow(mask_size=[32, 32], batch_norm=False):
     conv23 = fr.Node([conv22.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
                      'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv23')
 
-    r3 = fr.Node([conv23.out0], re.reshape_layer, {'target_dim': (3072,)}, name='r3')
+    r3 = fr.Node([conv23.out0], re.reshape_layer, {'target_dim': (img_dims[0]*img_dims[1]*img_dims[2],)}, name='r3')
 
-    fc = fr.Node([r3.out0], la.glow_coupling_layer, {'F_class': fu.F_fully_connected, 'clamp': 1}, name='fc')
-
-    r4 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (48, 8, 8)}, name='r4')
-
-    r5 = fr.Node([r4.out0], re.haar_restore_layer, {}, name='r5')
-
-    r6 = fr.Node([r5.out0], re.haar_restore_layer, {}, name='r6')
-
-    outp = fr.OutputNode([r6.out0], name='output')
-
-    nodes = [inp, outp, conv11, conv12, conv13, conv21, conv22, conv23, r1, r2, r3, r4, r5, r6, fc]
-
-    coder = fr.ReversibleGraphNet(nodes, 0, 1)
-
-    return coder
-
-
-def get_celeba_haar(mask_size=[156, 128], batch_norm=False):
-    """
-    Return an autoencoder.
-
-    :param mask_size: size of the input. Default: Size of CIFAR images
-    :return: autoencoder
-    """
-
-    img_dims = [3, mask_size[0], mask_size[1]]
-
-    inp = fr.InputNode(*img_dims, name='input')
-
-    r1 = fr.Node([inp.out0], re.haar_multiplex_layer, {}, name='r1')
-
-    conv11 = fr.Node([r1.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv11')
-    conv12 = fr.Node([conv11.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv12')
-    conv13 = fr.Node([conv12.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv13')
-
-    conv14 = fr.Node([conv13.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv14')
-    conv15 = fr.Node([conv14.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv15')
-    conv16 = fr.Node([conv15.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv16')
-
-    r2 = fr.Node([conv16.out0], re.haar_multiplex_layer, {}, name='r2')
-
-    conv21 = fr.Node([r2.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv21')
-    conv22 = fr.Node([conv21.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv22')
-    conv23 = fr.Node([conv22.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv23')
-
-    conv24 = fr.Node([conv23.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv24')
-    conv25 = fr.Node([conv24.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv25')
-    conv26 = fr.Node([conv25.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                     'F_args': {'channels_hidden': 128, 'batch_norm': batch_norm}, 'clamp': 1}, name='conv26')
-
-    r3 = fr.Node([conv26.out0], re.reshape_layer, {'target_dim': (img_dims[0]*img_dims[1]*img_dims[2],)}, name='r3')
-
-    fc = fr.Node([r3.out0], la.glow_coupling_layer, {'F_class': fu.F_fully_connected, 'clamp': 1}, name='fc')
+    fc = fr.Node([r3.out0], la.rev_multiplicative_layer, {'F_class': fu.F_small_connected, 'F_args': {'internal_size': 500}, 'clamp': 1}, name='fc')
 
     r4 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (48, 39, 32)}, name='r4')
 
@@ -649,7 +605,7 @@ def get_celeba_haar(mask_size=[156, 128], batch_norm=False):
 
     outp = fr.OutputNode([r6.out0], name='output')
 
-    nodes = [inp, outp, conv11, conv12, conv13, conv14, conv15, conv16, conv21, conv22, conv23, conv24, conv25, conv26,
+    nodes = [inp, outp, conv11, conv12, conv13, conv21, conv22, conv23,
              r1, r2, r3, r4, r5, r6, fc]
 
     coder = fr.ReversibleGraphNet(nodes, 0, 1)
