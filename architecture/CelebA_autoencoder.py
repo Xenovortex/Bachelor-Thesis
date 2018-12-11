@@ -23,11 +23,11 @@ class celeba_autoencoder(nn.Module):
         self.d1 = nn.Linear(bottleneck, 1024*46*36)  # b, 1024, 46, 36
         self.d2 = nn.ConvTranspose2d(1024, 1024, 3, stride=1, padding=0) # 1024, 48, 38
         self.d3 = nn.ConvTranspose2d(1024, 1024, 3, stride=1, padding=0) # 1024, 50, 40
-        self.d4 = nn.UpsamlingNearest2d(scale_factor=2) # 1024, 100, 80
+        self.d4 = nn.UpsamplingNearest2d(scale_factor=2) # 1024, 100, 80
         self.d5 = nn.ConvTranspose2d(1024, 512, 3, stride=1, padding=0) # 512, 102, 82
         self.d6 = nn.ConvTranspose2d(512, 256, 3, stride=1, padding=0) # 256, 104, 84
         self.d7 = nn.ConvTranspose2d(256, 128, 3, stride=1, padding=0) # 128, 106, 86
-        self.d8 = nn.UpsamlingNearest2d(scale_factor=2) # 128, 212, 172
+        self.d8 = nn.UpsamplingNearest2d(scale_factor=2) # 128, 212, 172
         self.d9 = nn.ConvTranspose2d(128, 64, 3, stride=1, padding=0) # 64, 214, 174
         self.d10 = nn.ConvTranspose2d(64, 32, 3, stride=1, padding=0) # 32, 216, 176
         self.d11 = nn.ConvTranspose2d(32, 3, 3, stride=1, padding=0) # 3, 218, 178

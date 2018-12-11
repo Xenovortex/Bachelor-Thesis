@@ -17,10 +17,10 @@ class cifar_autoencoder(nn.Module):
         # decoder
         self.d1 = nn.Linear(bottleneck, 1024*3*3)  # b, 1024, 3, 3
         self.d2 = nn.ConvTranspose2d(1024, 512, 3, stride=1, padding=0) # 512, 5, 5
-        self.d3 = nn.UpsamlingNearest2d(scale_factor=2) # 512, 10, 10
+        self.d3 = nn.UpsamplingNearest2d(scale_factor=2) # 512, 10, 10
         self.d4 = nn.ConvTranspose2d(512, 256, 3, stride=1, padding=0)  # b, 256, 12, 12
         self.d5 = nn.ConvTranspose2d(256, 128, 3, stride=1, padding=0)  # b, 128, 14, 14
-        self.d6 = nn.UpsamlingNearest2d(scale_factor=2) # 128, 28, 28
+        self.d6 = nn.UpsamplingNearest2d(scale_factor=2) # 128, 28, 28
         self.d7 = nn.ConvTranspose2d(128, 64, 3, stride=1, padding=0)  # b, 64, 30, 30
         self.d8 = nn.ConvTranspose2d(64, 3, 3, stride=1, padding=0) # b, 3, 32, 32
 
