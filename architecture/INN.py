@@ -19,17 +19,17 @@ def mnist_inn_com(mask_size=[28, 28]):
     r1 = fr.Node([inp.out0], re.haar_multiplex_layer, {}, name='r1')
 
     conv1 = fr.Node([r1.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                    'F_args': {'channels_hidden': 64}, 'clamp': 1}, name='conv1')
+                    'F_args': {'channels_hidden': 100}, 'clamp': 1}, name='conv1')
 
     conv2 = fr.Node([conv1.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                    'F_args': {'channels_hidden': 64}, 'clamp': 1}, name='conv2')
+                    'F_args': {'channels_hidden': 100}, 'clamp': 1}, name='conv2')
 
     conv3 = fr.Node([conv2.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
-                    'F_args': {'channels_hidden': 64}, 'clamp': 1}, name='conv3')
+                    'F_args': {'channels_hidden': 100}, 'clamp': 1}, name='conv3')
 
     r2 = fr.Node([conv3.out0], re.reshape_layer, {'target_dim': (img_dims[0]*img_dims[1]*img_dims[2],)}, name='r2')
 
-    fc = fr.Node([r2.out0], la.rev_multiplicative_layer, {'F_class': fu.F_small_connected, 'F_args': {'internal_size': 100}, 'clamp': 1}, name='fc')
+    fc = fr.Node([r2.out0], la.rev_multiplicative_layer, {'F_class': fu.F_small_connected, 'F_args': {'internal_size': 180}, 'clamp': 1}, name='fc')
 
     r3 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (4, 14, 14)}, name='r3')
 
@@ -75,7 +75,7 @@ def cifar_inn_com(mask_size=[32, 32]):
     r2 = fr.Node([conv3.out0], re.reshape_layer, {'target_dim': (img_dims[0]*img_dims[1]*img_dims[2],)}, name='r2')
 
     fc = fr.Node([r2.out0], la.rev_multiplicative_layer,
-                 {'F_class': fu.F_small_connected, 'F_args': {'internal_size': 500}, 'clamp': 1}, name='fc')
+                 {'F_class': fu.F_small_connected, 'F_args': {'internal_size': 1000}, 'clamp': 1}, name='fc')
 
     r3 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (48, 8, 8)}, name='r3')
 
