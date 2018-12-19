@@ -2,7 +2,7 @@ import torch
 import numpy as np
 from tqdm import tqdm_notebook as tqdm
 from functionalities import filemanager as fm
-from functionalities import CIFAR_coder_loss as cl
+from functionalities import MMD_autoencoder_loss as cl
 
 
 def get_loss(loader, model, criterion, latent_dim, tracker, device='cpu'):
@@ -68,7 +68,7 @@ def get_loss_bottleneck(loader, modelname, subdir, latent_dim_lst, device, a_dis
     for i in latent_dim_lst:
         print('bottleneck dimension: {}'.format(i))
         model = fm.load_model('{}_{}'.format(modelname, i).to(device), subdir)
-        criterion = cl.CIFAR_coder_loss(a_distr=a_distr, a_rec=a_rec, a_spar=a_spar, a_disen=a_disen, latent_dim=i, loss_type='l1', device=device)
+        criterion = cl.MMD_autoencoder_loss(a_distr=a_distr, a_rec=a_rec, a_spar=a_spar, a_disen=a_disen, latent_dim=i, loss_type='l1', device=device)
         losses = get_loss(loader, model, criterion, i, device)
         total_loss.append(losses[0])
         rec_loss.append(losses[1])

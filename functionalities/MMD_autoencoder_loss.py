@@ -2,11 +2,10 @@ import torch
 import torch.nn as nn
 import torchvision.models as models
 from functionalities import loss
-from functionalities import gpu
 
-class CIFAR_coder_loss(nn.Module):
+class MMD_autoencoder_loss(nn.Module):
     def __init__(self, a_distr, a_rec, a_spar, a_disen=0, latent_dim=8, loss_type='l1', device='cpu', feat_idx=None):
-        super(CIFAR_coder_loss, self).__init__()
+        super(MMD_autoencoder_loss, self).__init__()
         self.a_distr = a_distr
         self.a_rec = a_rec
         self.a_spar = a_spar

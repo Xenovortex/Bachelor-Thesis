@@ -4,7 +4,7 @@ from tqdm import tqdm_notebook as tqdm
 from functionalities import evaluater as ev
 from functionalities import filemanager as fm
 from functionalities import tracker as tk
-from functionalities import CIFAR_coder_loss as cl
+from functionalities import MMD_autoencoder_loss as cl
 from functionalities import plot as pl
 
 
@@ -297,7 +297,7 @@ def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_s
 
     track = tk.tracker(latent_dim)
 
-    loss = cl.CIFAR_coder_loss(a_distr=a_distr, a_rec=a_rec, a_spar=a_spar, a_disen=a_disen, latent_dim=latent_dim, loss_type=loss_type, device=device)
+    loss = cl.MMD_autoencoder_loss(a_distr=a_distr, a_rec=a_rec, a_spar=a_spar, a_disen=a_disen, latent_dim=latent_dim, loss_type=loss_type, device=device)
 
     return model, model_params, track, loss
 
