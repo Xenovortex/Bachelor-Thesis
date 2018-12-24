@@ -4,12 +4,15 @@ import torchvision.models as models
 from functionalities import loss
 
 class MMD_autoencoder_loss(nn.Module):
-    def __init__(self, a_distr, a_rec, a_spar, a_disen=0, latent_dim=8, loss_type='l1', device='cpu', feat_idx=None):
+    def __init__(self, a_distr, a_rec, a_spar, a_disen=0, a_disc=0, latent_dim=8, loss_type='l1', device='cpu',
+                 disc_lst=None, feat_idx=None):
         super(MMD_autoencoder_loss, self).__init__()
         self.a_distr = a_distr
         self.a_rec = a_rec
         self.a_spar = a_spar
         self.a_disen = a_disen
+        self.a_disc = a_disc
+        self.disc_lst = disc_lst
         self.latent_dim = latent_dim
         self.loss_type = loss_type
         self.device = device
@@ -47,6 +50,10 @@ class MMD_autoencoder_loss(nn.Module):
 
         l_disen = self.a_disen * loss.MMD_gram(v[:, :self.latent_dim], loss.shuffle(v[:, :self.latent_dim]))
 
-        l = l_sparse + l_rec + l_distr + l_disen
-
-        return [l, l_rec, l_distr, l_sparse, l_disen]
+        if target is not None and self.disc_lst is not None:
+            l_disc = self.a_disc * torch.sum(loss.l2_loss(torch.min(torch.abs(v[:, :1] - self.disc_lst), 1)[0]))
+            l = l_rec + l_distr + l_sparse + l_disen + l_disc
+            return [l, l_rec, l_distr, l_sparse, l_disen, l_disc]
+        else:
+            l = l_rec + l_distr + l_sparse + l_disen
+            return [l, l_rec, l_distr, l_sparse, l_disen]
