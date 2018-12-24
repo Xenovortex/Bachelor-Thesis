@@ -9,7 +9,7 @@ from functionalities import plot as pl
 
 
 def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_dim, trainloader, validloader=None,
-          testloader=None, tracker=None, device='cpu', save_model=True, save_variable=True, subdir=None, num_epoch_save=10, 
+          testloader=None, disc_lst=None, tracker=None, device='cpu', save_model=True, save_variable=True, subdir=None, num_epoch_save=10,
           num_img=100, grid_row_size=10):
     """
     Train a INN model.
@@ -24,6 +24,8 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
     :param trainloader: the training set wrapped by a loader
     :param validloader: the validation set wrapped by a loader
     :param testloader: the test set wrapped by a loader
+    :param disc_lst: If given the first latent dimension will be enforced to be discrete depending on the values given
+    in disc_lst
     :param tracker: tracker for values during training
     :param device: device on which to do the computation (CPU or CUDA). Please use get_device() function to get the
     device, if using multiple GPU's. Default: cpu
@@ -74,12 +76,20 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             lat_shape = lat_img.shape
             lat_img = lat_img.view(lat_img.size(0), -1)
 
-            lat_img_mod = torch.cat([lat_img[:, :latent_dim], lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
-            lat_img_mod = lat_img_mod.view(lat_shape)
+            if disc_lst is not None:
+                disc_lat_idx = torch.min(torch.abs(lat_img[:,:1] - disc_lst), 1)[1]
+                disc_lat_dim = disc_lst[disc_lat_idx]
+                lat_img_mod = torch.cat([torch.unsqueeze(disc_lat_dim, 1), lat_img[:, 1:latent_dim],
+                                         lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
+                lat_img_mod = lat_img_mod.view(lat_shape)
+            else:
+                lat_img_mod = torch.cat([lat_img[:, :latent_dim], lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
+                lat_img_mod = lat_img_mod.view(lat_shape)
 
             output = model(lat_img_mod, rev=True)
 
             batch_loss = criterion(inputs, lat_img, output)
+
             batch_loss[0].backward()
 
             optimizer.step()
@@ -132,7 +142,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             spar_test_loss_log.append(test_loss[3])
             disen_test_loss_log.append(test_loss[4])
 
-            print('Loss: {:.3f} \t L_rec: {:.3f} \t L_spar: {:.3f} \t L_dist: {:.3f} \t L_disen: {:.3f}'.format(
+            print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
                 test_loss[0], test_loss[1], test_loss[2], test_loss[3], test_loss[4]))
 
             print('latent image mean: {:.3f} \t latent image std: {:.3f}'.format(tracker.mu, tracker.std))
@@ -289,6 +299,8 @@ def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_s
     init_param(model)
 
     model.train()
+
+    model.to(device)
 
     model_params = []
     for parameter in model.parameters():
