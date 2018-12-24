@@ -53,6 +53,9 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
     disen_loss_log = []
     disen_valid_loss_log = []
     disen_test_loss_log =[]
+    disc_loss_log = []
+    disc_valid_loss_log = []
+    disc_test_loss_log = []
     min_loss = 10e300
     best_epoch = 0
 
@@ -103,9 +106,13 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
         dist_loss_log.append(losses[2])
         spar_loss_log.append(losses[3])
         disen_loss_log.append(losses[4])
-
-        print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
-            losses[0], losses[1], losses[2], losses[3], losses[4]))
+        if len(losses) == 5:
+            disc_loss_log.append(losses[5])
+            print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f} \t L_disc: {:.3f}'.format(
+                losses[0], losses[1], losses[2], losses[3], losses[4], losses[5]))
+        else:
+            print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
+                losses[0], losses[1], losses[2], losses[3], losses[4]))
 
         if validloader is not None:
             print('\n')
@@ -116,9 +123,13 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             dist_valid_loss_log.append(valid_loss[2])
             spar_valid_loss_log.append(valid_loss[3])
             disen_valid_loss_log.append(valid_loss[4])
-
-            print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
-                valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3], valid_loss[4]))
+            if len(valid_loss) == 5:
+                disc_valid_loss_log.append(valid_loss[5])
+                print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f} \t L_disc: {:.3f}'.format(
+                    valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3], valid_loss[4], valid_loss[5]))
+            else:
+                print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
+                    valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3], valid_loss[4]))
 
             print('latent image mean: {:.3f} \t latent image std: {:.3f}'.format(tracker.mu, tracker.std))
 
@@ -141,9 +152,13 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             dist_test_loss_log.append(test_loss[2])
             spar_test_loss_log.append(test_loss[3])
             disen_test_loss_log.append(test_loss[4])
-
-            print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
-                test_loss[0], test_loss[1], test_loss[2], test_loss[3], test_loss[4]))
+            if len(test_loss) == 5:
+                disc_test_loss_log.append(test_loss[5])
+                print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f} \t L_disc: {:.3f}'.format(
+                    test_loss[0], test_loss[1], test_loss[2], test_loss[3], test_loss[4], test_loss[5]))
+            else:
+                print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
+                    test_loss[0], test_loss[1], test_loss[2], test_loss[3], test_loss[4]))
 
             print('latent image mean: {:.3f} \t latent image std: {:.3f}'.format(tracker.mu, tracker.std))
 
