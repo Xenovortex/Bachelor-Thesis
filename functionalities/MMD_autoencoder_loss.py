@@ -32,7 +32,7 @@ class MMD_autoencoder_loss(nn.Module):
             self.feat_model.eval()
             self.feat_model.to(self.device)
 
-    def forward(self, z, v, z_):
+    def forward(self, z, v, z_, target=None):
         if self.loss_type == 'l1':
             l_rec = self.a_rec * loss.l1_loss(z_, z)
         elif self.loss_type == 'l2':
@@ -50,8 +50,13 @@ class MMD_autoencoder_loss(nn.Module):
 
         l_disen = self.a_disen * loss.MMD_gram(v[:, :self.latent_dim], loss.shuffle(v[:, :self.latent_dim]))
 
+
         if target is not None and self.disc_lst is not None:
-            l_disc = self.a_disc * torch.sum(loss.l2_loss(torch.min(torch.abs(v[:, :1] - self.disc_lst), 1)[0]))
+            l_disc = self.a_disc * loss.l2_loss(v[:, :1], self.disc_lst[target])
+            l = l_rec + l_distr + l_sparse + l_disen + l_disc
+            return [l, l_rec, l_distr, l_sparse, l_disen, l_disc]
+        elif self.disc_lst is not None:
+            l_disc = self.a_disc * loss.l2_loss(torch.min(torch.abs(v[:, :1] - self.disc_lst), 1)[0])
             l = l_rec + l_distr + l_sparse + l_disen + l_disc
             return [l, l_rec, l_distr, l_sparse, l_disen, l_disc]
         else:

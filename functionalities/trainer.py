@@ -9,7 +9,7 @@ from functionalities import plot as pl
 
 
 def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_dim, trainloader, validloader=None,
-          testloader=None, disc_lst=None, tracker=None, device='cpu', save_model=True, save_variable=True, subdir=None, num_epoch_save=10,
+          testloader=None, disc_lst=None, use_label=False, tracker=None, device='cpu', save_model=True, save_variable=True, subdir=None, num_epoch_save=10,
           num_img=100, grid_row_size=10):
     """
     Train a INN model.
@@ -26,6 +26,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
     :param testloader: the test set wrapped by a loader
     :param disc_lst: If given the first latent dimension will be enforced to be discrete depending on the values given
     in disc_lst
+    :param use_label: If true, the labels will be used to help enforcing the first latent dimension to be discrete
     :param tracker: tracker for values during training
     :param device: device on which to do the computation (CPU or CUDA). Please use get_device() function to get the
     device, if using multiple GPU's. Default: cpu
@@ -91,7 +92,10 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
 
             output = model(lat_img_mod, rev=True)
 
-            batch_loss = criterion(inputs, lat_img, output)
+            if use_label:
+                batch_loss = criterion(inputs, lat_img, output, labels)
+            else:
+                batch_loss = criterion(inputs, lat_img, output)
 
             batch_loss[0].backward()
 
