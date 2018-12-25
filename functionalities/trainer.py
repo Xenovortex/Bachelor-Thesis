@@ -81,10 +81,12 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             lat_img = lat_img.view(lat_img.size(0), -1)
 
             if use_label and disc_lst is not None:
+                disc_lst = torch.tensor(disc_lst).to(device)
                 disc_lat_dim = disc_lst[labels]
                 lat_img_mod = torch.cat([torch.unsqueeze(disc_lat_dim, 1), lat_img[:, 1:latent_dim],
                                          lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
             elif disc_lst is not None:
+                disc_lst = torch.tensor(disc_lst).to(device)
                 disc_lat_idx = torch.min(torch.abs(lat_img[:,:1] - disc_lst), 1)[1]
                 disc_lat_dim = disc_lst[disc_lat_idx]
                 lat_img_mod = torch.cat([torch.unsqueeze(disc_lat_dim, 1), lat_img[:, 1:latent_dim],
