@@ -5,7 +5,7 @@ from functionalities import filemanager as fm
 from functionalities import MMD_autoencoder_loss as cl
 
 
-def get_loss(loader, model, criterion, latent_dim, tracker, device='cpu'):
+def get_loss(loader, model, criterion, latent_dim, tracker, disc_lst=None, use_label=False, device='cpu'):
     """
     Compute the loss of a model on a train, test or evalutation set wrapped by a loader.
 
@@ -23,7 +23,10 @@ def get_loss(loader, model, criterion, latent_dim, tracker, device='cpu'):
 
     model.eval()
 
-    losses = np.zeros(5, dtype=np.double)
+    if disc_lst is not None:
+        losses = np.zeros(6, dtype=np.double)
+    else:
+        losses = np.zeros(5, dtype=np.double)
 
     tracker.reset()
 
@@ -36,12 +39,28 @@ def get_loss(loader, model, criterion, latent_dim, tracker, device='cpu'):
             lat_shape = lat_img.shape
             lat_img = lat_img.view(lat_img.size(0), -1)
 
-            lat_img_mod = torch.cat([lat_img[:, :latent_dim], lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
+            if use_label and disc_lst is not None:
+                disc_lst = torch.tensor(disc_lst).to(device)
+                disc_lat_dim = disc_lst[labels]
+                lat_img_mod = torch.cat([torch.unsqueeze(disc_lat_dim, 1), lat_img[:, 1:latent_dim],
+                                         lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
+            elif disc_lst is not None:
+                disc_lst = torch.tensor(disc_lst).to(device)
+                disc_lat_idx = torch.min(torch.abs(lat_img[:, :1] - disc_lst), 1)[1]
+                disc_lat_dim = disc_lst[disc_lat_idx]
+                lat_img_mod = torch.cat([torch.unsqueeze(disc_lat_dim, 1), lat_img[:, 1:latent_dim],
+                                         lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
+            else:
+                lat_img_mod = torch.cat([lat_img[:, :latent_dim], lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
+
             lat_img_mod = lat_img_mod.view(lat_shape)
 
             output = model(lat_img_mod, rev=True)
 
-            batch_loss = criterion(inputs, lat_img, output)
+            if use_label:
+                batch_loss = criterion(inputs, lat_img, output, labels)
+            else:
+                batch_loss = criterion(inputs, lat_img, output)
 
             for i in range(len(batch_loss)):
                 losses[i] += batch_loss[i].item()
