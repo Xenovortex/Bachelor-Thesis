@@ -130,7 +130,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
         if validloader is not None:
             print('\n')
             print('Compute and record loss on validation set')
-            valid_loss = ev.get_loss(validloader, model, criterion, latent_dim, tracker, device)
+            valid_loss = ev.get_loss(validloader, model, criterion, latent_dim, tracker, disc_lst, use_label, device)
             tot_valid_loss_log.append(valid_loss[0])
             rec_valid_loss_log.append(valid_loss[1])
             dist_valid_loss_log.append(valid_loss[2])
@@ -159,7 +159,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
         if testloader is not None:
             print('\n')
             print('Compute and record loss on test set:')
-            test_loss = ev.get_loss(testloader, model, criterion, latent_dim, tracker, device)
+            test_loss = ev.get_loss(testloader, model, criterion, latent_dim, tracker, disc_lst, use_label, device)
             tot_test_loss_log.append(test_loss[0])
             rec_test_loss_log.append(test_loss[1])
             dist_test_loss_log.append(test_loss[2])

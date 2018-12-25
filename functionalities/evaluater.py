@@ -14,6 +14,9 @@ def get_loss(loader, model, criterion, latent_dim, tracker, disc_lst=None, use_l
     :param criterion: the criterion to compute the loss
     :param latent_dim: dimension of the latent space
     :param tracker: tracker for values during training
+    :param disc_lst: If given the first latent dimension will be enforced to be discrete depending on the values given
+    in disc_lst
+    :param use_label: If true, the labels will be used to help enforcing the first latent dimension to be discrete
     :param device: device on which to do the computation (CPU or CUDA). Please use get_device() function to get the
     device, if using multiple GPU's. Default: cpu
     :return: losses
