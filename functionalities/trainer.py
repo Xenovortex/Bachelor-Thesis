@@ -63,7 +63,10 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
     for epoch in range(num_epoch):
         model.train()
 
-        losses = np.zeros(5, dtype=np.double)
+        if disc_lst is not None:
+            losses = np.zeros(6, dtype=np.double)
+        else:
+            losses = np.zeros(5, dtype=np.double)
 
         scheduler.step()
 
