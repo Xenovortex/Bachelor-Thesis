@@ -327,6 +327,8 @@ def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_s
 
     model.to(device)
 
+    disc_lst = torch.tensor(disc_lst).to(device)
+
     model_params = []
     for parameter in model.parameters():
         if parameter.requires_grad:
