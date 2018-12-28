@@ -67,11 +67,15 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             losses = np.zeros(6, dtype=np.double)
         else:
             losses = np.zeros(5, dtype=np.double)
+            
+        print('length of losses:', len(losses))
 
         scheduler.step()
 
         print('Epoch: {}'.format(epoch + 1))
         print('Training:')
+
+        correct = 0
 
         for i, data in enumerate(tqdm(trainloader), 0):
             inputs, labels = data
@@ -88,6 +92,8 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
                 disc_lat_dim = disc_lst[labels]
                 lat_img_mod = torch.cat([torch.unsqueeze(disc_lat_dim, 1), lat_img[:, 1:latent_dim],
                                          lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
+                pred = lat_img[:, :1] * 10
+                correct += pred.eq(labels.view_as(pred)).sum().item()
             elif disc_lst is not None:
                 disc_lst = torch.tensor(disc_lst).to(device)
                 disc_lat_idx = torch.min(torch.abs(lat_img[:,:1] - disc_lst), 1)[1]
@@ -113,16 +119,18 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             for i in range(len(batch_loss)):
                 losses[i] += batch_loss[i].item()
 
+        correct = correct * 100. / len(trainloader.dataset)
         losses /= len(trainloader)
         tot_loss_log.append(losses[0])
         rec_loss_log.append(losses[1])
         dist_loss_log.append(losses[2])
         spar_loss_log.append(losses[3])
         disen_loss_log.append(losses[4])
-        if len(losses) == 5:
+        if len(losses) == 6:
             disc_loss_log.append(losses[5])
             print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f} \t L_disc: {:.3f}'.format(
                 losses[0], losses[1], losses[2], losses[3], losses[4], losses[5]))
+            print('Train Accuracy: {:.1f}'.format(correct))
         else:
             print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
                 losses[0], losses[1], losses[2], losses[3], losses[4]))
@@ -136,7 +144,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             dist_valid_loss_log.append(valid_loss[2])
             spar_valid_loss_log.append(valid_loss[3])
             disen_valid_loss_log.append(valid_loss[4])
-            if len(valid_loss) == 5:
+            if len(valid_loss) == 6:
                 disc_valid_loss_log.append(valid_loss[5])
                 print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f} \t L_disc: {:.3f}'.format(
                     valid_loss[0], valid_loss[1], valid_loss[2], valid_loss[3], valid_loss[4], valid_loss[5]))
@@ -165,10 +173,11 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             dist_test_loss_log.append(test_loss[2])
             spar_test_loss_log.append(test_loss[3])
             disen_test_loss_log.append(test_loss[4])
-            if len(test_loss) == 5:
+            if len(test_loss) == 6:
                 disc_test_loss_log.append(test_loss[5])
                 print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f} \t L_disc: {:.3f}'.format(
                     test_loss[0], test_loss[1], test_loss[2], test_loss[3], test_loss[4], test_loss[5]))
+                print('L_disc: {:.3f}'.format(test_loss[5]))
             else:
                 print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
                     test_loss[0], test_loss[1], test_loss[2], test_loss[3], test_loss[4]))

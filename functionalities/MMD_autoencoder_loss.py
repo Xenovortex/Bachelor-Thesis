@@ -52,7 +52,7 @@ class MMD_autoencoder_loss(nn.Module):
 
 
         if target is not None and self.disc_lst is not None:
-            l_disc = self.a_disc * loss.l1_loss(v[:, :1], self.disc_lst[target])
+            l_disc = self.a_disc * loss.l2_loss(v[:, :1], self.disc_lst[target])
             l = l_rec + l_distr + l_sparse + l_disen + l_disc
             return [l, l_rec, l_distr, l_sparse, l_disen, l_disc]
         elif self.disc_lst is not None:

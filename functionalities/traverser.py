@@ -37,6 +37,36 @@ def traverse_continous_line(latent_dim, input_size, idx, num_sample, sample_prio
     return torch.Tensor(samples)
 
 
+def traverse_discrete_line(latent_dim, input_size, idx, num_sample, disc_lst, sample_prior=False, lat_img=None):
+    """
+    Returns samples from latent space, corresponding to a traversal of a continuous latent variable indicated by idx.
+
+    :param latent_dim: dimension of the latent space
+    :param input_size: size of the input for INN
+    :param idx: Index of continuous latent dimension to traverse. If None, no latent is traversed and all latent
+    dimensions are randomly sampled or kept fixed.
+    :param num_sample: number of samples to generate
+    :param sample_prior: If False fixes samples in untraversed latent dimensions. If True samples untraversed latent
+    dimensions from prior.
+    :return: samples
+    """
+
+    if lat_img is not None:
+        samples = lat_img
+    else:
+        if sample_prior:
+            lat_samples = np.random.normal(size=(num_sample, latent_dim))
+            zero_samples = np.zeros(shape=(num_sample, input_size - latent_dim))
+            samples = np.concatenate((lat_samples, zero_samples), axis=1)
+        else:
+            samples = np.zeros(shape=(num_sample, input_size))
+
+        for i in range(num_sample):
+            samples[i, idx] = disc_lst[i]
+
+    return torch.Tensor(samples)
+
+
 def traverse_continous_grid(latent_dim, input_size, idx, axis, num_sample, grid_row_size, sample_prior=False, idx_2=None):
     """
     Returns samples from latent space, corresponding to a two dimensional traversal of the continuous space.
