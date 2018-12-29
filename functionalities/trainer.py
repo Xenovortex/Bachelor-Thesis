@@ -9,7 +9,7 @@ from functionalities import plot as pl
 
 
 def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_dim, trainloader, validloader=None,
-          testloader=None, disc_lst=None, use_label=False, tracker=None, device='cpu', save_model=True, save_variable=True, subdir=None, num_epoch_save=10,
+          testloader=None, conditional=False, disc_lst=None, use_label=False, tracker=None, device='cpu', save_model=True, save_variable=True, subdir=None, num_epoch_save=10,
           num_img=100, grid_row_size=10):
     """
     Train a INN model.
@@ -87,13 +87,20 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
             lat_shape = lat_img.shape
             lat_img = lat_img.view(lat_img.size(0), -1)
 
-            if use_label and disc_lst is not None:
-                disc_lst = torch.tensor(disc_lst).to(device)
+            if conditional:
+                binary_label = lat_img.new_zeros(lat_img.size(0), 10)
+                idx = torch.arange(labels.size(0), dtype=torch.long)
+                binary_label[idx, labels] = 1
+                lat_img_mod = torch.cat([lat_img[:, :latent_dim], binary_label, lat_img.new_zeros((lat_img[:, latent_dim+10:]).shape)], dim=1)
+                pred = lat_img[:, latent_dim:latent_dim+10].max(1, keepdim=True)[1]
+                correct += pred.eq(label.view_as(pred)).sum().item()
+            elif use_label and disc_lst is not None:
+                disc_lst = torch.tensor(disc_lst).to(device).float()
                 disc_lat_dim = disc_lst[labels]
-                lat_img_mod = torch.cat([torch.unsqueeze(disc_lat_dim, 1), lat_img[:, 1:latent_dim],
-                                         lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
-                pred = lat_img[:, :1] * 10
-                correct += pred.eq(labels.view_as(pred)).sum().item()
+                lat_img_mod = torch.cat([torch.unsqueeze(disc_lat_dim, 1).float(), lat_img[:, 1:latent_dim],
+                                         lat_img.new_zeros((lat_img[:, latent_dim:]).shape).float()], dim=1)
+                pred = disc_lst[torch.min(torch.abs(lat_img[:, :1] - disc_lst), 1)[1]] * 10
+                correct += pred.eq(labels.float().view_as(pred)).sum().item()
             elif disc_lst is not None:
                 disc_lst = torch.tensor(disc_lst).to(device)
                 disc_lat_idx = torch.min(torch.abs(lat_img[:,:1] - disc_lst), 1)[1]
@@ -177,7 +184,6 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
                 disc_test_loss_log.append(test_loss[5])
                 print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f} \t L_disc: {:.3f}'.format(
                     test_loss[0], test_loss[1], test_loss[2], test_loss[3], test_loss[4], test_loss[5]))
-                print('L_disc: {:.3f}'.format(test_loss[5]))
             else:
                 print('Loss: {:.3f} \t L_rec: {:.3f} \t L_dist: {:.3f} \t L_spar: {:.3f} \t L_disen: {:.3f}'.format(
                     test_loss[0], test_loss[1], test_loss[2], test_loss[3], test_loss[4]))
@@ -215,12 +221,14 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
                          "sparsity_loss_{}_{}".format(modelname, num_epoch), subdir)
         fm.save_variable([disen_loss_log, disen_valid_loss_log, disen_test_loss_log],
                          "disentanglement_loss_{}_{}".format(modelname, num_epoch), subdir)
-        fm.save_variable([tot_loss_log, rec_loss_log, dist_loss_log, spar_loss_log, disen_loss_log],
+        fm.save_variable([disc_loss_log, disc_valid_loss_log, disc_test_loss_log],
+                         "discrete_loss_{}_{}".format(modelname, num_epoch), subdir)
+        fm.save_variable([tot_loss_log, rec_loss_log, dist_loss_log, spar_loss_log, disen_loss_log, disc_loss_log],
                          "train_loss_{}_{}".format(modelname, num_epoch), subdir)
         fm.save_variable([tot_valid_loss_log, rec_valid_loss_log, dist_valid_loss_log, spar_valid_loss_log,
-                          disen_valid_loss_log], "validation_loss_{}_{}".format(modelname, num_epoch), subdir)
+                          disen_valid_loss_log, disc_loss_log], "validation_loss_{}_{}".format(modelname, num_epoch), subdir)
         fm.save_variable([tot_test_loss_log, rec_test_loss_log, dist_test_loss_log, spar_test_loss_log,
-                          disen_test_loss_log], "test_loss_{}_{}".format(modelname, num_epoch), subdir)
+                          disen_test_loss_log, disc_loss_log], "test_loss_{}_{}".format(modelname, num_epoch), subdir)
 
     return model
 

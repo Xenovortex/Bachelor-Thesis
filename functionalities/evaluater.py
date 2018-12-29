@@ -5,7 +5,7 @@ from functionalities import filemanager as fm
 from functionalities import MMD_autoencoder_loss as cl
 
 
-def get_loss(loader, model, criterion, latent_dim, tracker, disc_lst=None, use_label=False, device='cpu'):
+def get_loss(loader, model, criterion, latent_dim, tracker, conditional=False, disc_lst=None, use_label=False, device='cpu'):
     """
     Compute the loss of a model on a train, test or evalutation set wrapped by a loader.
 
@@ -32,6 +32,8 @@ def get_loss(loader, model, criterion, latent_dim, tracker, disc_lst=None, use_l
         losses = np.zeros(5, dtype=np.double)
 
     tracker.reset()
+    
+    correct = 0
 
     for i, data in enumerate(tqdm(loader), 0):
         inputs, labels = data
@@ -42,11 +44,20 @@ def get_loss(loader, model, criterion, latent_dim, tracker, disc_lst=None, use_l
             lat_shape = lat_img.shape
             lat_img = lat_img.view(lat_img.size(0), -1)
 
-            if use_label and disc_lst is not None:
+            if conditional:
+                binary_label = lat_img.new_zeros(lat_img.size(0), 10)
+                idx = torch.arange(labels.size(0), dtype=torch.long)
+                binary_label[idx, labels] = 1
+                lat_img_mod = torch.cat([lat_img[:,:latent_dim], binary_label, lat_img.new_zeros((lat_img[:,latent_dim+10:]).shape)], dim=1)
+                pred = lat_img[:, latent_dim:latent_dim+10].max(1, keepdim=True)[1]
+                correct += pred.eq(labels.view_as(pred)).sum().item()
+            elif use_label and disc_lst is not None:
                 disc_lst = torch.tensor(disc_lst).to(device)
                 disc_lat_dim = disc_lst[labels]
                 lat_img_mod = torch.cat([torch.unsqueeze(disc_lat_dim, 1), lat_img[:, 1:latent_dim],
                                          lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim=1)
+                pred = disc_lst[torch.min(torch.abs(lat_img[:, :1] - disc_lst), 1)[1]] * 10
+                correct += pred.eq(labels.float().view_as(pred)).sum().item()
             elif disc_lst is not None:
                 disc_lst = torch.tensor(disc_lst).to(device)
                 disc_lat_idx = torch.min(torch.abs(lat_img[:, :1] - disc_lst), 1)[1]
@@ -69,7 +80,10 @@ def get_loss(loader, model, criterion, latent_dim, tracker, disc_lst=None, use_l
                 losses[i] += batch_loss[i].item()
 
             tracker.update(lat_img)
-
+            
+    correct = correct * 100. / len(loader.dataset)
+    if use_label or conditional:
+        print('Test Accuracy: {:.1f}'.format(correct))
     losses /= len(loader)
     return losses
 
