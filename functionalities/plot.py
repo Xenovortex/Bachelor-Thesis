@@ -113,7 +113,7 @@ def imshow(img, figsize=(30, 30), filename=None):
     plt.show()
 
 
-def plot_reconst(model, loader, latent_dim, device='cpu', num_img=1, grid_row_size=10, figsize=(30, 30), filename=None):
+def plot_reconst(model, loader, latent_dim, device='cpu', num_img=1, grid_row_size=10, figsize=(30, 30), filename=None, conditional=False):
     """
     Plot original images and the reconstructed images by the INN
 
@@ -138,7 +138,14 @@ def plot_reconst(model, loader, latent_dim, device='cpu', num_img=1, grid_row_si
     lat_img = model(img)
     shape = lat_img.shape
     lat_img = lat_img.view(lat_img.size(0), -1)
-    lat_img_mod = torch.cat([lat_img[:, :latent_dim], lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim = 1)
+    if conditional:
+        binary_label = lat_img.new_zeros(lat_img.size(0), 10)
+        idx = torch.arange(label.size(0), dtype=torch.long)
+        binary_label[idx, label] = 1
+        lat_img_mod = torch.cat([lat_img[:, :latent_dim], binary_label, lat_img.new_zeros((lat_img[:, latent_dim+10:]).shape)], dim=1)
+    else:
+        lat_img_mod = torch.cat([lat_img[:, :latent_dim], lat_img.new_zeros((lat_img[:, latent_dim:]).shape)], dim = 1)
+
     lat_img_mod = lat_img_mod.view(shape)
     output = model(lat_img_mod, rev=True)
 
@@ -152,7 +159,7 @@ def plot_reconst(model, loader, latent_dim, device='cpu', num_img=1, grid_row_si
     return img, output
 
 
-def plot_diff(model, loader, latent_dim, device='cpu', num_img=1, grid_row_size=10, figsize=(30, 30), filename=None):
+def plot_diff(model, loader, latent_dim, device='cpu', num_img=1, grid_row_size=10, figsize=(30, 30), filename=None, conditional=False):
     """
     Plot original images, reconstructed images by the INN and the difference between those images.
 
@@ -166,7 +173,7 @@ def plot_diff(model, loader, latent_dim, device='cpu', num_img=1, grid_row_size=
     :return: None
     """
 
-    img, reconst_img = plot_reconst(model, loader, latent_dim, device, num_img, grid_row_size, figsize, filename)
+    img, reconst_img = plot_reconst(model, loader, latent_dim, device, num_img, grid_row_size, figsize, filename, conditional)
 
     diff_img = (img - reconst_img + 1) / 2
 
