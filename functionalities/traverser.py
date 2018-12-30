@@ -3,7 +3,7 @@ from scipy import stats
 import torch
 
 
-def traverse_continous_line(latent_dim, input_size, idx, num_sample, sample_prior=False, lat_img=None):
+def traverse_continous_line(latent_dim, input_size, idx, num_sample, sample_prior=False, lat_img=None, conditional_target=None):
     """
     Returns samples from latent space, corresponding to a traversal of a continuous latent variable indicated by idx.
 
@@ -24,6 +24,12 @@ def traverse_continous_line(latent_dim, input_size, idx, num_sample, sample_prio
             lat_samples = np.random.normal(size=(num_sample, latent_dim))
             zero_samples = np.zeros(shape=(num_sample, input_size - latent_dim))
             samples = np.concatenate((lat_samples, zero_samples), axis=1)
+        elif conditional_target is not None:
+            lat_samples = np.zeros(shape=(num_sample, latent_dim))
+            binary_target = np.zeros(shape=(num_sample, 10))
+            idx = np.arange(num_sample, dtype=torch.long)
+            binary_target[idx, conditional_target] = 1
+            samples = np.concatenate((lat_samples, binary_target, np.zeros(shape=(num_sample, input_size - (latent_dim+10)))))
         else:
             samples = np.zeros(shape=(num_sample, input_size))
 
