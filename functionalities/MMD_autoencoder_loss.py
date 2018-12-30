@@ -58,7 +58,7 @@ class MMD_autoencoder_loss(nn.Module):
             l_distr = torch.stack(v_array).mean()
             #l_distr = self.a_distr * loss.MMD_gram(v[:, :self.latent_dim], y)
             l_sparse = self.a_spar * torch.mean(v[:, self.latent_dim+10:] ** 2)
-            l_disc = self.a_disc * loss.l2_loss(v[:, self.latent : self.latent+10], target)
+            l_disc = self.a_disc * loss.l2_loss(v[:, self.latent_dim : self.latent_dim+10], target)
             l = l_rec + l_distr + l_sparse + l_disen + l_disc
             return [l, l_rec, l_distr, l_sparse, l_disen, l_disc]
         elif label is not None and self.disc_lst is not None:
