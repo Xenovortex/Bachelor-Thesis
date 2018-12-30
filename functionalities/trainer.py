@@ -63,7 +63,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
     for epoch in range(num_epoch):
         model.train()
 
-        if disc_lst is not None:
+        if disc_lst is not None or conditional:
             losses = np.zeros(6, dtype=np.double)
         else:
             losses = np.zeros(5, dtype=np.double)
@@ -93,7 +93,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
                 binary_label[idx, labels] = 1
                 lat_img_mod = torch.cat([lat_img[:, :latent_dim], binary_label, lat_img.new_zeros((lat_img[:, latent_dim+10:]).shape)], dim=1)
                 pred = lat_img[:, latent_dim:latent_dim+10].max(1, keepdim=True)[1]
-                correct += pred.eq(label.view_as(pred)).sum().item()
+                correct += pred.eq(labels.view_as(pred)).sum().item()
             elif use_label and disc_lst is not None:
                 disc_lst = torch.tensor(disc_lst).to(device).float()
                 disc_lat_dim = disc_lst[labels]
@@ -114,7 +114,9 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
 
             output = model(lat_img_mod, rev=True)
 
-            if use_label:
+            if conditional:
+                batch_loss = criterion(inputs, lat_img, output, labels, binary_label)
+            elif use_label:
                 batch_loss = criterion(inputs, lat_img, output, labels)
             else:
                 batch_loss = criterion(inputs, lat_img, output)
@@ -145,7 +147,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
         if validloader is not None:
             print('\n')
             print('Compute and record loss on validation set')
-            valid_loss = ev.get_loss(validloader, model, criterion, latent_dim, tracker, disc_lst, use_label, device)
+            valid_loss = ev.get_loss(validloader, model, criterion, latent_dim, tracker, conditional, disc_lst, use_label, device)
             tot_valid_loss_log.append(valid_loss[0])
             rec_valid_loss_log.append(valid_loss[1])
             dist_valid_loss_log.append(valid_loss[2])
@@ -174,7 +176,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
         if testloader is not None:
             print('\n')
             print('Compute and record loss on test set:')
-            test_loss = ev.get_loss(testloader, model, criterion, latent_dim, tracker, disc_lst, use_label, device)
+            test_loss = ev.get_loss(testloader, model, criterion, latent_dim, tracker, conditional, disc_lst, use_label, device)
             tot_test_loss_log.append(test_loss[0])
             rec_test_loss_log.append(test_loss[1])
             dist_test_loss_log.append(test_loss[2])
@@ -316,7 +318,7 @@ def train_bottleneck(num_epoch, get_model, loss_type, modelname, milestones, lat
     fm.save_variable([tot_train_loss_log, rec_train_loss_log, dist_train_loss_log, spar_train_loss_log,
                       disen_train_loss_log], "bottleneck_train_loss_{}".format(modelname), modelname)
 
-def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_spar=1, a_disen=1, a_disc=0, disc_lst=None, use_lat_dim=False):
+def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_spar=1, a_disen=1, a_disc=0, conditional=False, disc_lst=None, use_lat_dim=False):
     """
     Initialize the INN model.
 
@@ -347,7 +349,8 @@ def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_s
 
     model.to(device)
 
-    disc_lst = torch.tensor(disc_lst).to(device)
+    if disc_lst is not None:
+        disc_lst = torch.tensor(disc_lst).to(device)
 
     model_params = []
     for parameter in model.parameters():
@@ -356,7 +359,7 @@ def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_s
 
     track = tk.tracker(latent_dim)
 
-    loss = cl.MMD_autoencoder_loss(a_distr=a_distr, a_rec=a_rec, a_spar=a_spar, a_disen=a_disen, a_disc=a_disc, latent_dim=latent_dim, loss_type=loss_type, device=device, disc_lst=disc_lst)
+    loss = cl.MMD_autoencoder_loss(a_distr=a_distr, a_rec=a_rec, a_spar=a_spar, a_disen=a_disen, a_disc=a_disc, latent_dim=latent_dim, loss_type=loss_type, device=device, conditional=conditional, disc_lst=disc_lst)
 
     return model, model_params, track, loss
 

@@ -26,7 +26,7 @@ def get_loss(loader, model, criterion, latent_dim, tracker, conditional=False, d
 
     model.eval()
 
-    if disc_lst is not None:
+    if disc_lst is not None or conditional:
         losses = np.zeros(6, dtype=np.double)
     else:
         losses = np.zeros(5, dtype=np.double)
