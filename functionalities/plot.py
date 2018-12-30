@@ -293,7 +293,7 @@ def plot_samples(model, latent_dim, input_size, input_shape, num_sample=1, grid_
     imshow(torchvision.utils.make_grid(generate.detach(), grid_row_size), figsize, filename if (filename is not None) else None)
 
 
-def plot_latent_traversal_line(model, latent_dim, input_size, input_shape, idx, num_sample=1, figsize=(30, 30), filename=None, dataset=None):
+def plot_latent_traversal_line(model, latent_dim, input_size, input_shape, idx, num_sample=1, figsize=(30, 30), filename=None, dataset=None, conditional_target=None, device='cpu'):
     """
     Generates an image traversal through a latent dimension.
 
@@ -315,7 +315,7 @@ def plot_latent_traversal_line(model, latent_dim, input_size, input_shape, idx, 
 
         img, label = next(iter(loader))
 
-        model.to('cpu')
+        model.to(device)
         model.eval()
 
         lat_img = model(img)
@@ -323,7 +323,7 @@ def plot_latent_traversal_line(model, latent_dim, input_size, input_shape, idx, 
     else:
         lat_img = None
 
-    latent_samples = tra.traverse_continous_line(latent_dim, input_size, idx, num_sample, False, lat_img)
+    latent_samples = tra.traverse_continous_line(latent_dim, input_size, idx, num_sample, False, lat_img, conditional_target=conditional_target)
 
     if len(input_shape) == 2:
         latent_samples = latent_samples.view(num_sample, input_shape[0], input_shape[1])
@@ -332,7 +332,7 @@ def plot_latent_traversal_line(model, latent_dim, input_size, input_shape, idx, 
     else:
         raise ValueError("input_shape is neither 2- nor 3-dimensional")
 
-    generate = model(latent_samples, rev=True)
+    generate = model(latent_samples.to(device), rev=True)
 
     imshow(torchvision.utils.make_grid(generate.detach(), num_sample), figsize, filename if (filename is not None) else None)
 
@@ -371,7 +371,7 @@ def plot_latent_traversal_grid(model, latent_dim, input_size, input_shape, idx, 
     imshow(torchvision.utils.make_grid(generate.detach(), grid_row_size), figsize, filename if (filename is not None) else None)
 
 
-def plot_all_traversals(model, latent_dim, input_size, input_shape, num_sample=8, figsize=(30, 30), filename=None):
+def plot_all_traversals(model, latent_dim, input_size, input_shape, num_sample=8, figsize=(30, 30), filename=None, conditiontal_target=None, device='cpu'):
     """
     Generates a grid of images for all latent dimensions, where each row corresponds to a traversal along a latent
     dimension.
@@ -388,7 +388,7 @@ def plot_all_traversals(model, latent_dim, input_size, input_shape, num_sample=8
     #latent_samples = []
 
     for idx in range(latent_dim):
-        plot_latent_traversal_line(model, latent_dim, input_size, input_shape, idx, num_sample, figsize, filename)
+        plot_latent_traversal_line(model, latent_dim, input_size, input_shape, idx, num_sample, figsize, filename, conditional_target=conditiontal_target, device=device)
 
     #imshow(torchvision.utils.make_grid(generate.detach(), num_sample), figsize, filename if (filename is not None) else None)
 
