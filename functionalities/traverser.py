@@ -27,9 +27,9 @@ def traverse_continous_line(latent_dim, input_size, idx, num_sample, sample_prio
         elif conditional_target is not None:
             lat_samples = np.zeros(shape=(num_sample, latent_dim))
             binary_target = np.zeros(shape=(num_sample, 10))
-            idx = np.arange(num_sample, dtype=torch.long)
+            idx = np.arange(num_sample)
             binary_target[idx, conditional_target] = 1
-            samples = np.concatenate((lat_samples, binary_target, np.zeros(shape=(num_sample, input_size - (latent_dim+10)))))
+            samples = np.concatenate((lat_samples, binary_target, np.zeros(shape=(num_sample, input_size - (latent_dim+10)))), axis=1)
         else:
             samples = np.zeros(shape=(num_sample, input_size))
 
