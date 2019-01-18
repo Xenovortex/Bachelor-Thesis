@@ -321,7 +321,7 @@ def train_bottleneck(num_epoch, get_model, loss_type, modelname, milestones, lat
     fm.save_variable([tot_train_loss_log, rec_train_loss_log, dist_train_loss_log, spar_train_loss_log,
                       disen_train_loss_log], "bottleneck_train_loss_{}".format(modelname), modelname)
 
-def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_spar=1, a_disen=1, a_disc=0, conditional=False, disc_lst=None, use_lat_dim=False):
+def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_spar=1, a_disen=1, a_disc=0, conditional=False, disc_lst=None, use_lat_dim=False, cont_min=None, cont_max=None, num_iter=None):
     """
     Initialize the INN model.
 
@@ -362,7 +362,7 @@ def init_model(get_model, latent_dim, loss_type, device, a_distr=1, a_rec=1, a_s
 
     track = tk.tracker(latent_dim)
 
-    loss = cl.MMD_autoencoder_loss(a_distr=a_distr, a_rec=a_rec, a_spar=a_spar, a_disen=a_disen, a_disc=a_disc, latent_dim=latent_dim, loss_type=loss_type, device=device, conditional=conditional, disc_lst=disc_lst)
+    loss = cl.MMD_autoencoder_loss(a_distr=a_distr, a_rec=a_rec, a_spar=a_spar, a_disen=a_disen, a_disc=a_disc, latent_dim=latent_dim, loss_type=loss_type, device=device, conditional=conditional, disc_lst=disc_lst, cont_min=cont_min, cont_max=cont_max, num_iter=num_iter)
 
     return model, model_params, track, loss
 
