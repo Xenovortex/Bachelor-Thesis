@@ -5,7 +5,7 @@ from functionalities import loss
 
 class MMD_autoencoder_loss(nn.Module):
     def __init__(self, a_distr, a_rec, a_spar, a_disen=0, a_disc=0, latent_dim=8, loss_type='l1', device='cpu',
-                 conditional=False, disc_lst=None, feat_idx=None):
+                 conditional=False, disc_lst=None, feat_idx=None, cont_min=None, cont_max=None, num_iter=None):
         super(MMD_autoencoder_loss, self).__init__()
         self.a_distr = a_distr
         self.a_rec = a_rec
@@ -17,6 +17,10 @@ class MMD_autoencoder_loss(nn.Module):
         self.loss_type = loss_type
         self.device = device
         self.conditional = conditional
+        self.cont_min = cont_min
+        self.cont_max = cont_max
+        self.num_iter = num_iter
+        self.num_step = 0
 
         if self.loss_type == 'vgg':
             if feat_idx is None:
@@ -32,6 +36,9 @@ class MMD_autoencoder_loss(nn.Module):
             self.feat_model = nn.Sequential(*list(resnet18.children())[:feat_idx])
             self.feat_model.eval()
             self.feat_model.to(self.device)
+
+    def update_num_step(self, num_step):
+        self.num_step = num_step
 
     def forward(self, z, v, z_, label=None, target=None):
         if self.loss_type == 'l1':
@@ -77,7 +84,13 @@ class MMD_autoencoder_loss(nn.Module):
             return [l, l_rec, l_distr, l_sparse, l_disen, l_disc]
         else:
             y = v.new_empty((v.size(0), self.latent_dim)).normal_()
-            l_distr = self.a_distr * loss.MMD_gram(v[:, :self.latent_dim], y)
+            if self.cont_min is not None and self.cont_max is not None and self.num_iter is not None:
+                cont_capacity = (self.cont_max - self.cont_min) * self.num_step / float(self.num_iter) + self.cont_min
+                cont_capacity = min(cont_capacity, self.cont_max)
+                l_distr = loss.MMD_gram(v[:, :self.latent_dim], y)
+                l_distr = self.a_distr * torch.abs(l_distr - cont_capacity)
+            else:
+                l_distr = self.a_distr * loss.MMD_gram(v[:, :self.latent_dim], y)
             l_sparse = self.a_spar * torch.mean(v[:, self.latent_dim:] ** 2)
             l = l_rec + l_distr + l_sparse + l_disen
             return [l, l_rec, l_distr, l_sparse, l_disen]

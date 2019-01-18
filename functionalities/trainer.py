@@ -59,6 +59,7 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
     disc_test_loss_log = []
     min_loss = 10e300
     best_epoch = 0
+    num_step = 0
 
     for epoch in range(num_epoch):
         model.train()
@@ -78,6 +79,8 @@ def train(num_epoch, model, modelname, criterion, optimizer, scheduler, latent_d
         correct = 0
 
         for i, data in enumerate(tqdm(trainloader), 0):
+            criterion.update_num_step(num_step)
+            num_step += 1
             inputs, labels = data
             inputs, labels = inputs.to(device), labels.to(device)
 

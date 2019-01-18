@@ -14,13 +14,13 @@ def load_mnist(aug=False):
 
     save_path = "./datasets/mnist"
 
-    transform_train = transforms.Compose([transforms.ColorJitter(), transforms.RandomRotation(45), transforms.ToTensor()])
+    transform_train = transforms.Compose([transforms.RandomRotation(20), transforms.ColorJitter(),  transforms.ToTensor()]) # 
 
     transform_norm = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 
     transform = transforms.Compose([transforms.ToTensor()])
 
-    trainset = datasets.MNIST(root=save_path, train=True, transform=transform_train, download=True)
+    trainset = datasets.MNIST(root=save_path, train=True, transform=transform, download=True)
     testset = datasets.MNIST(root=save_path, train=False, transform=transform, download=True)
 
     classes = [x for x in range(10)]
