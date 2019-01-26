@@ -44,6 +44,87 @@ def mnist_inn_com(mask_size=[28, 28]):
     return coder
 
 
+def mnist_inn_com_rev(mask_size=[28, 28]):
+    """
+    Return an autoencoder.
+
+    :param mask_size: size of the input. Default: Size of MNIST images
+    :return:
+    """
+
+    img_dims = [1, mask_size[0], mask_size[1]]
+
+    inp = fr.InputNode(*img_dims, name='input')
+
+    r1 = fr.Node([inp.out0], re.haar_multiplex_layer, {}, name='r1')
+
+    conv1 = fr.Node([r1.out0], la.rev_multiplicative_layer, {'F_class': fu.F_conv,
+                    'F_args': {}, 'clamp': 1}, name='conv1')
+
+    conv2 = fr.Node([conv1.out0], la.rev_multiplicative_layer, {'F_class': fu.F_conv,
+                    'F_args': {}, 'clamp': 1}, name='conv2')
+
+    conv3 = fr.Node([conv2.out0], la.rev_multiplicative_layer, {'F_class': fu.F_conv,
+                    'F_args': {}, 'clamp': 1}, name='conv3')
+
+    r2 = fr.Node([conv3.out0], re.reshape_layer, {'target_dim': (img_dims[0]*img_dims[1]*img_dims[2],)}, name='r2')
+
+    fc = fr.Node([r2.out0], la.rev_multiplicative_layer, {'F_class': fu.F_small_connected, 'F_args': {}, 'clamp': 1}, name='fc')
+
+    r3 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (4, 14, 14)}, name='r3')
+
+    r4 = fr.Node([r3.out0], re.haar_restore_layer, {}, name='r4')
+
+    outp = fr.OutputNode([r4.out0], name='output')
+
+    nodes = [inp, outp, conv1, conv2, conv3, r1, r2, r3, r4, fc]
+
+    coder = fr.ReversibleGraphNet(nodes, 0, 1)
+
+    return coder
+
+
+
+def mnist_inn_disen(mask_size=[28, 28]):
+    """
+    Return an autoencoder.
+
+    :param mask_size: size of the input. Default: Size of MNIST images
+    :return:
+    """
+
+    img_dims = [1, mask_size[0], mask_size[1]]
+
+    inp = fr.InputNode(*img_dims, name='input')
+
+    r1 = fr.Node([inp.out0], re.haar_multiplex_layer, {}, name='r1')
+
+    conv1 = fr.Node([r1.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
+                    'F_args': {}, 'clamp': 1}, name='conv1')
+
+    conv2 = fr.Node([conv1.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
+                    'F_args': {}, 'clamp': 1}, name='conv2')
+
+    conv3 = fr.Node([conv2.out0], la.glow_coupling_layer, {'F_class': fu.F_conv,
+                    'F_args': {}, 'clamp': 1}, name='conv3')
+
+    r2 = fr.Node([conv3.out0], re.reshape_layer, {'target_dim': (img_dims[0]*img_dims[1]*img_dims[2],)}, name='r2')
+
+    fc = fr.Node([r2.out0], la.rev_multiplicative_layer, {'F_class': fu.F_small_connected, 'F_args': {}, 'clamp': 1}, name='fc')
+
+    r3 = fr.Node([fc.out0], re.reshape_layer, {'target_dim': (4, 14, 14)}, name='r3')
+
+    r4 = fr.Node([r3.out0], re.haar_restore_layer, {}, name='r4')
+
+    outp = fr.OutputNode([r4.out0], name='output')
+
+    nodes = [inp, outp, conv1, conv2, conv3, r1, r2, r3, r4, fc]
+
+    coder = fr.ReversibleGraphNet(nodes, 0, 1)
+
+    return coder
+
+
 def cifar_inn_com(mask_size=[32, 32]):
     """
     Return CIFAR INN autoencoder for comparison with classical autoencoder (same number of parameters).
